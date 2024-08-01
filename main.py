@@ -48,6 +48,7 @@ ren_count = 0
 shori_next_has_to_switch = False #for men/fuchi shori
 is_failed_state = False
 fail_cause = ''
+key_states = [False, False, False, False]
 
 binds = KeyBindings()
 
@@ -215,6 +216,22 @@ def fail(reason: str):
 default_font = pygame.font.Font(None, 74)
 
 #load images and shit
+base_image = pygame.image.load('assets/Base.png')
+men_image = pygame.image.load('assets/Don.png')
+fuchi_image = pygame.image.load('assets/Ka.png')
+image_width, image_height = base_image.get_size()
+left_fuchi_image = fuchi_image.subsurface((0, 0, image_width // 2, image_height))
+right_fuchi_image = fuchi_image.subsurface((image_width // 2, 0, image_width // 2, image_height))
+left_men_image = men_image.subsurface((0, 0, image_width // 2, image_height))
+right_men_image = men_image.subsurface((image_width // 2, 0, image_width // 2, image_height))
+
+image_x_offset = 1280 / 2 - image_width / 2
+image_y_offset = 380
+image_offsets = (image_x_offset, image_y_offset)
+
+clock = pygame.time.Clock()
+fps = 60
+
 
 while running:
   screen.fill((255, 255, 255))
@@ -225,8 +242,13 @@ while running:
       current_pressed_count += 1
       key = pygame.key.name(event.key)
       #Practicing Zone vvv
-      if is_failed_state: continue
       if key not in binds.get_all_bindings().values(): continue #Ignore non keys
+      match key:
+        case binds.ka_left: key_states[0] = True
+        case binds.don_left: key_states[1] = True
+        case binds.don_right: key_states[2] = True
+        case binds.ka_right: key_states[3] = True
+      if is_failed_state: continue
       if current_pressed_count > 1:
         fail('Double Input')
         continue
@@ -236,7 +258,16 @@ while running:
       else:
         ren_count += 1
     elif event.type == pygame.KEYUP:
-        current_pressed_count -= 1
+      current_pressed_count -= 1
+      match pygame.key.name(event.key):
+        case binds.ka_left:
+          key_states[0] = False
+        case binds.don_left:
+          key_states[1] = False
+        case binds.don_right:
+          key_states[2] = False
+        case binds.ka_right:
+          key_states[3] = False
 
   #Rendering text
   skill_face = render_text(str(current_skill), default_font, (0, 0, 0))
@@ -246,6 +277,13 @@ while running:
   if is_failed_state:
     fail_face = render_text(f"Fail: {fail_cause}", default_font, (255, 0, 0))
     screen.blit(fail_face, (50, 250))
-  pygame.display.flip()
+  screen.blit(base_image, image_offsets)
+  if key_states[3]: screen.blit(right_fuchi_image, (image_x_offset + image_width // 2, image_y_offset))
+  if key_states[0]: screen.blit(left_fuchi_image, image_offsets)
+  if key_states[2]: screen.blit(right_men_image, (image_x_offset + image_width // 2, image_y_offset))
+  if key_states[1]: screen.blit(left_men_image, image_offsets)
+  pygame.display.update()
+  clock.tick(fps)
 
+  #Render drum base
 pygame.quit()
